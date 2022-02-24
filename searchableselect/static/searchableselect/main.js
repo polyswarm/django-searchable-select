@@ -104,13 +104,20 @@
                     }, 200);
                 });
 
+                var url = $select.attr('data-url');
+                var model = $select.attr('data-model');
+                var search_field = $select.attr('data-search-field');
+                var lookup_field = $select.attr('data-lookup-field');
+                var limit = $select.attr('data-limit');
+                var many = $select.attr('data-many');
+                var name = $select.attr('data-name');
                 $select.completion({
-                    url: $select.attr('data-url') + '?model=' + $select.attr('data-model') + '&search_field=' + $select.attr('data-search-field') + '&limit=' + $select.attr('data-limit') + '&q=',
+                    url: url + '?model=' + model + '&search_field=' + search_field + '&lookup_field=' + lookup_field + '&limit=' + limit + '&q=',
                     onSelect: function (data) {
                         var $chip = $('<div/>').addClass('chip minimized').html(data.name).append(
-                            $('<input/>').attr('type', 'hidden').attr('name', $select.attr('data-name')).attr('value', data.pk)
+                            $('<input/>').attr('type', 'hidden').attr('name', name).attr('value', data[lookup_field])
                         );
-                        if($select.attr('data-many') == '1') {
+                        if(many == '1') {
                             $chips.append($chip);
                         } else {
                             $chips.html($chip);

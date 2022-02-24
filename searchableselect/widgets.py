@@ -30,10 +30,11 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model')
         self.search_field = kwargs.pop('search_field')
+        self.lookup_field = kwargs.pop('lookup_field', 'pk')
         self.many = kwargs.pop('many', True)
         self.limit = int(kwargs.pop('limit', 10))
 
-        super(SearchableSelect, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None, renderer=None, choices=()):
         if value is None:
@@ -41,9 +42,19 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
 
         if not isinstance(value, (list, tuple)):
             # This is a ForeignKey field. We must allow only one item.
-            value = [value]
+            if isinstance(value, str) and self.lookup_field != 'pk' and ',' in value:
+                # Fields of type ArrayField (array types in Postgres) are serialized
+                # as strings with comma separated values
+                value = value.split(',')
+            else:
+                value = [value]
 
-        values = get_model(self.model).objects.filter(pk__in=value)
+        queryset = get_model(self.model).objects.filter(**{'{}__in'.format(self.lookup_field): value})
+
+        values = [
+            {'name': str(v), 'value': getattr(v, self.lookup_field)} for v in queryset
+        ]
+
         final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
 
         return render_to_string('searchableselect/select.html', dict(
@@ -52,6 +63,7 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
             values=values,
             model=self.model,
             search_field=self.search_field,
+            lookup_field=self.lookup_field,
             limit=self.limit,
             many=self.many
         ))

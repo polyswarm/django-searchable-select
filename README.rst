@@ -111,6 +111,62 @@ Example app
 
 Just run the project from `example` directory, head to http://127.0.0.1:8000, login as ``admin``/``admin`` and try adding Cats!
 
+The ``lookup_field`` argument and ``ArrayField``
+================================================
+
+*(New)*
+
+There is one more argument that can be passed to the ``SearchableSelect`` constructor,
+the ``lookup_field``, that by default is ``pk`` (the primary key whatever the
+name is). The field chosen from the model is the one that will be returned as result.
+This is specially useful with the
+`ArrayField <https://docs.djangoproject.com/en/4.0/ref/contrib/postgres/fields/#django.contrib.postgres.fields.ArrayField>`_,
+where we may want to store string values from another table, but not the ids.
+
+Example
+~~~~~~~
+
+You have a ``Blog`` model that has multiple "tags", and you have
+a table with all the valid tags, but you don't want a **many-to-many**
+relation because it is inefficient, so instead you use a
+`Array field from Postgres <https://www.postgresql.org/docs/current/arrays.html>`_,
+where you store only the "label" of the tags, not the ids.
+
+So the mapping is as follow:
+
+.. code:: python
+
+   class Blog(models.Model):
+       tags = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+
+Anf the mapping of the table where you have all the possible tags:
+
+.. code:: python
+
+   class Tag(models.Model):
+       label = models.CharField(unique=True, max_length=255)
+       def __str__(self):
+           return self.label
+
+So now the configuration in the Admin to query the tags and store the values
+from the ``label`` field instead of the primary key value would be as follow:
+
+.. code:: python
+
+   class BlogForm(forms.ModelForm):
+       class Meta:
+           model = Blog
+           exclude = ()
+           widgets = {
+               'tags': SearchableSelect(
+                   model='blogs.Tag', search_field='label', lookup_field='label', many=True, limit=10),
+           }
+
+   @admin.register(Blog)
+   class BlogAdmin(admin.ModelAdmin):
+       form = BlogForm
+
+
 Supported versions
 ==================
 
