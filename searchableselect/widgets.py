@@ -32,6 +32,7 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
         self.search_field = kwargs.pop('search_field')
         self.lookup_field = kwargs.pop('lookup_field', 'pk')
         self.load_on_empty = kwargs.pop('load_on_empty', False)
+        self.display_deleted = kwargs.pop('display_deleted', True)
         self.many = kwargs.pop('many', True)
         self.limit = int(kwargs.pop('limit', 10))
 
@@ -55,6 +56,14 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
         values = [
             {'name': str(v), 'value': getattr(v, self.lookup_field)} for v in queryset
         ]
+
+        if self.display_deleted and len(values) < len(value):
+            # If  there are fewer values retrieved than
+            # values passed -> elements were deleted from the foreign model, so
+            # if self.display_deleted is True -> append them at the end
+            # of the final list of "chips" displayed (this case should be uncommon).
+            for v in filter(lambda x: x not in map(lambda l: l['value'], values), value):
+                values.append({'name': str(v), 'value': v})
 
         final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
 

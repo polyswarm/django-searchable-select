@@ -108,6 +108,8 @@ Installation
    -  ``load_on_empty`` (optional, default ``False``) whether to show the
       first options available (up to limit) when the input gets the focus
       and it's empty.
+   -  ``display_deleted`` (optional, default ``True``) display elements in
+      the "chips" section even if they were deleted from the "foreign" model.
 
 Example app
 ===========
@@ -142,7 +144,7 @@ So the mapping is as follow:
    class Blog(models.Model):
        tags = ArrayField(models.CharField(max_length=255), blank=True, default=list)
 
-Anf the mapping of the table where you have all the possible tags:
+And the mapping of the table where you have all the possible tags:
 
 .. code:: python
 
