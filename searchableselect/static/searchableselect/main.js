@@ -65,7 +65,12 @@
 
             objects.initialize();
 
-            $element.typeahead(null, {
+            var thInit = {highlight: true};
+            if ($element.attr('data-load-on-empty') === 'True') {
+                thInit.minLength = 0;
+            }
+
+            $element.typeahead(thInit, {
                 name: 'objects',
                 source: objects.ttAdapter(),
                 displayKey: 'matched_name',

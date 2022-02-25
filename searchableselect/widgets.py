@@ -31,6 +31,7 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
         self.model = kwargs.pop('model')
         self.search_field = kwargs.pop('search_field')
         self.lookup_field = kwargs.pop('lookup_field', 'pk')
+        self.load_on_empty = kwargs.pop('load_on_empty', False)
         self.many = kwargs.pop('many', True)
         self.limit = int(kwargs.pop('limit', 10))
 
@@ -64,6 +65,7 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
             model=self.model,
             search_field=self.search_field,
             lookup_field=self.lookup_field,
+            load_on_empty=self.load_on_empty,
             limit=self.limit,
             many=self.many
         ))

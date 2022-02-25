@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
     name='django-searchable-select',
-    version='2.0b1',
+    version='2.0b2',
     description='django-searchable-select - a better and faster multiple selection widget with suggestions for Django',
     long_description="""django-searchable-select
 ========================
@@ -116,6 +116,9 @@ Installation
       for ``ForeignKey``.
    -  ``limit`` (optional) specifies the maximum count of entries to retrieve.
       Defaults to 10.
+   -  ``load_on_empty`` (optional, default ``False``) whether to show the
+      first options available (up to limit) when the input gets the focus
+      and it's empty.
 
 Example app
 ===========

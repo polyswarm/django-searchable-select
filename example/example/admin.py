@@ -10,7 +10,7 @@ class CatAdminForm(forms.ModelForm):
         exclude = ()
         widgets = {
             'favorite_foods': SearchableSelect(model='example.Food', search_field='name', many=True, limit=20),
-            'owner': SearchableSelect(model='example.Person', search_field='name', many=False),
+            'owner': SearchableSelect(model='example.Person', search_field='name', load_on_empty=True, many=False),
         }
 
 

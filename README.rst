@@ -105,6 +105,9 @@ Installation
    -  ``many`` must be ``True`` for ``ManyToManyField`` and ``False``
       for ``ForeignKey``.
    -  ``limit`` (optional) specifies the maximum count of entries to retrieve.
+   -  ``load_on_empty`` (optional, default ``False``) whether to show the
+      first options available (up to limit) when the input gets the focus
+      and it's empty.
 
 Example app
 ===========
