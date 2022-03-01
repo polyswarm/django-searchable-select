@@ -1,11 +1,9 @@
 django-searchable-select
 ========================
 
-.. figure:: https://travis-ci.org/and3rson/django-searchable-select.svg
 .. figure:: https://coveralls.io/repos/github/and3rson/django-searchable-select/badge.svg
 
-A better and faster multiple selection widget with suggestions for
-Django
+A better and faster multiple selection widget with suggestions for Django.
 
 What is this?
 =============
@@ -49,7 +47,7 @@ Installation
 
        $ pip install django-searchable-select
 
-2. Add ‘searchableselect’ to your settings.
+2. Add ``'searchableselect'`` to your settings.
 
    .. code:: python
 
@@ -71,7 +69,7 @@ Installation
        urlpatterns = patterns(
            '',
            # ...
-           url('^searchableselect/', include('searchableselect.urls')),
+           re_path('^searchableselect/', include('searchableselect.urls')),
            # ...
        )
 
@@ -107,17 +105,77 @@ Installation
    -  ``many`` must be ``True`` for ``ManyToManyField`` and ``False``
       for ``ForeignKey``.
    -  ``limit`` (optional) specifies the maximum count of entries to retrieve.
+   -  ``load_on_empty`` (optional, default ``False``) whether to show the
+      first options available (up to limit) when the input gets the focus
+      and it's empty.
+   -  ``display_deleted`` (optional, default ``True``) display elements in
+      the "chips" section even if they were deleted from the "foreign" model.
 
 Example app
 ===========
 
 Just run the project from `example` directory, head to http://127.0.0.1:8000, login as ``admin``/``admin`` and try adding Cats!
 
+The ``lookup_field`` argument and ``ArrayField``
+================================================
+
+*(New)*
+
+There is one more argument that can be passed to the ``SearchableSelect`` constructor,
+the ``lookup_field``, that by default is ``pk`` (the primary key whatever the
+name is). The field chosen from the model is the one that will be returned as result.
+This is specially useful with the
+`ArrayField <https://docs.djangoproject.com/en/4.0/ref/contrib/postgres/fields/#django.contrib.postgres.fields.ArrayField>`_,
+where we may want to store string values from another table, but not the ids.
+
+Example
+~~~~~~~
+
+You have a ``Blog`` model that has multiple "tags", and you have
+a table with all the valid tags, but you don't want a **many-to-many**
+relation because it is inefficient, so instead you use a
+`Array field from Postgres <https://www.postgresql.org/docs/current/arrays.html>`_,
+where you store only the "label" of the tags, not the ids.
+
+So the mapping is as follow:
+
+.. code:: python
+
+   class Blog(models.Model):
+       tags = ArrayField(models.CharField(max_length=255), blank=True, default=list)
+
+And the mapping of the table where you have all the possible tags:
+
+.. code:: python
+
+   class Tag(models.Model):
+       label = models.CharField(unique=True, max_length=255)
+       def __str__(self):
+           return self.label
+
+So now the configuration in the Admin to query the tags and store the values
+from the ``label`` field instead of the primary key value would be as follow:
+
+.. code:: python
+
+   class BlogForm(forms.ModelForm):
+       class Meta:
+           model = Blog
+           exclude = ()
+           widgets = {
+               'tags': SearchableSelect(
+                   model='blogs.Tag', search_field='label', lookup_field='label', many=True, limit=10),
+           }
+
+   @admin.register(Blog)
+   class BlogAdmin(admin.ModelAdmin):
+       form = BlogForm
+
+
 Supported versions
 ==================
 
--  Python 2.7.x: Django 1.7, 1.8, 1.9, 1.10
--  Python 3.x: Django 1.8, 1.9, 1.10
+- Python 3.5+ and Django 2.2, 3.0, 3.2 or 4.0.
 
 Known issues
 ============

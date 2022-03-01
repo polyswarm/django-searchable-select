@@ -1,10 +1,5 @@
-try:
-    # Django <=1.9
-    from django.db.models.loading import get_model
-except ImportError:
-    # Django 1.10+
-    from django.apps import apps
-    get_model = apps.get_model
+from django.apps import apps
+get_model = apps.get_model
 
 from django.utils.encoding import smart_str
 from django.http import JsonResponse
@@ -15,6 +10,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 def filter_models(request):
     model_name = request.GET.get('model')
     search_field = request.GET.get('search_field')
+    lookup_field = request.GET.get('lookup_field')
     value = request.GET.get('q')
     limit = int(request.GET.get('limit', 10))
     try:
@@ -26,9 +22,7 @@ def filter_models(request):
 
     values = model.objects.filter(**{'{}__icontains'.format(search_field): value})[:limit]
     values = [
-        dict(pk=v.pk, name=smart_str(v))
-        for v
-        in values
+        {lookup_field: getattr(v, lookup_field), 'name': smart_str(v)} for v in values
     ]
 
     return JsonResponse(dict(result=values))

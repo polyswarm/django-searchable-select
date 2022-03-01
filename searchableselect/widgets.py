@@ -1,12 +1,7 @@
 from django import forms
 
-try:
-    # Django <=1.9
-    from django.db.models.loading import get_model
-except ImportError:
-    # Django 1.10+
-    from django.apps import apps
-    get_model = apps.get_model
+from django.apps import apps
+get_model = apps.get_model
 
 from django.template.loader import render_to_string
 from django.utils.datastructures import MultiValueDict
@@ -25,7 +20,8 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
             )
         }
         js = (
-            'searchableselect/jquery-2.2.4.min.js',
+            'admin/js/vendor/jquery/jquery.min.js',
+            'admin/js/jquery.init.js',
             'searchableselect/bloodhound.min.js',
             'searchableselect/typeahead.jquery.min.js',
             'searchableselect/main.js',
@@ -34,10 +30,13 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model')
         self.search_field = kwargs.pop('search_field')
+        self.lookup_field = kwargs.pop('lookup_field', 'pk')
+        self.load_on_empty = kwargs.pop('load_on_empty', False)
+        self.display_deleted = kwargs.pop('display_deleted', True)
         self.many = kwargs.pop('many', True)
         self.limit = int(kwargs.pop('limit', 10))
 
-        super(SearchableSelect, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def render(self, name, value, attrs=None, renderer=None, choices=()):
         if value is None:
@@ -45,14 +44,28 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
 
         if not isinstance(value, (list, tuple)):
             # This is a ForeignKey field. We must allow only one item.
-            value = [value]
+            if isinstance(value, str) and self.lookup_field != 'pk' and ',' in value:
+                # Fields of type ArrayField (array types in Postgres) are serialized
+                # as strings with comma separated values
+                value = value.split(',')
+            else:
+                value = [value]
 
-        values = get_model(self.model).objects.filter(pk__in=value)
-        try:
-            final_attrs = self.build_attrs(attrs, name=name)
-        except TypeError as e:
-            # Fallback for django 1.10+
-            final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
+        queryset = get_model(self.model).objects.filter(**{'{}__in'.format(self.lookup_field): value})
+
+        values = [
+            {'name': str(v), 'value': getattr(v, self.lookup_field)} for v in queryset
+        ]
+
+        if self.display_deleted and len(values) < len(value):
+            # If  there are fewer values retrieved than
+            # values passed -> elements were deleted from the foreign model, so
+            # if self.display_deleted is True -> append them at the end
+            # of the final list of "chips" displayed (this case should be uncommon).
+            for v in filter(lambda x: x not in map(lambda l: l['value'], values), value):
+                values.append({'name': str(v), 'value': v})
+
+        final_attrs = self.build_attrs(attrs, extra_attrs={'name': name})
 
         return render_to_string('searchableselect/select.html', dict(
             field_id=final_attrs['id'],
@@ -60,6 +73,8 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
             values=values,
             model=self.model,
             search_field=self.search_field,
+            lookup_field=self.lookup_field,
+            load_on_empty=self.load_on_empty,
             limit=self.limit,
             many=self.many
         ))
