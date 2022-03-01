@@ -49,7 +49,11 @@ class SearchableSelect(forms.CheckboxSelectMultiple):
                 # as strings with comma separated values
                 value = value.split(',')
             else:
-                value = [value]
+                if value == '':
+                    # Empty ArrayField are serialized as ''
+                    value = []
+                else:
+                    value = [value]
 
         queryset = get_model(self.model).objects.filter(**{'{}__in'.format(self.lookup_field): value})
 
